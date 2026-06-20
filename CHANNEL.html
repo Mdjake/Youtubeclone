@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Clone - Channel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <i class="fas fa-bars menu-icon" onclick="toggleSidebar()"></i>
+            <a href="index.html" class="logo">
+                <i class="fab fa-youtube" style="color: #ff0000;"></i>
+                <span>YouTube</span>
+            </a>
+        </div>
+        
+        <div class="header-center">
+            <form class="search-form" onsubmit="searchVideos(event)">
+                <input type="text" id="searchInput" placeholder="Search" required>
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+        
+        <div class="header-right">
+            <i class="fas fa-video"></i>
+            <i class="fas fa-th"></i>
+            <i class="fas fa-bell"></i>
+            <div class="avatar">U</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="channel-container" id="channelContainer">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading channel...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const channelId = urlParams.get('channel_id');
+            if (channelId) {
+                loadChannel(channelId);
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
