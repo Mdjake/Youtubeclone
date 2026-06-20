@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Clone - Search</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <i class="fas fa-bars menu-icon" onclick="toggleSidebar()"></i>
+            <a href="index.html" class="logo">
+                <i class="fab fa-youtube" style="color: #ff0000;"></i>
+                <span>YouTube</span>
+            </a>
+        </div>
+        
+        <div class="header-center">
+            <form class="search-form" onsubmit="searchVideos(event)">
+                <input type="text" id="searchInput" placeholder="Search" required>
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+        
+        <div class="header-right">
+            <i class="fas fa-video"></i>
+            <i class="fas fa-th"></i>
+            <i class="fas fa-bell"></i>
+            <div class="avatar">U</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="search-container">
+            <div class="search-header">
+                <h2 id="searchQuery">Search results for ""</h2>
+                <div class="search-filters">
+                    <select class="filter-select" id="orderFilter" onchange="applyFilters()">
+                        <option value="relevance">Relevance</option>
+                        <option value="date">Upload date</option>
+                        <option value="viewCount">View count</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                    
+                    <select class="filter-select" id="durationFilter" onchange="applyFilters()">
+                        <option value="any">Any duration</option>
+                        <option value="short">Short</option>
+                        <option value="medium">Medium</option>
+                        <option value="long">Long</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="search-results" id="searchResults">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Searching...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('search_query');
+            if (query) {
+                document.getElementById('searchInput').value = query;
+                performSearch(query);
+            }
+        });
+    </script>
+</body>
+</html>
