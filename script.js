@@ -1,54 +1,72 @@
-// script.js - Complete YouTube Clone JavaScript
+// script.js - COMPLETE FIXED VERSION MATCHING YOUR API
 
 // ===================== CONFIGURATION =====================
-const API_BASE_URL = 'https://ytdlp-enhanced.vercel.app'; // CHANGE THIS TO YOUR API URL
-// Example: const API_BASE_URL = 'https://your-api.com';
-// Example: const API_BASE_URL = 'http://localhost:5000';
+// ⚠️ CHANGE THIS TO YOUR API URL!
+const API_BASE_URL = 'https://ytdlp-enhanced.vercel.app'; // CHANGE THIS!
 
-// ===================== UTILITY FUNCTIONS =====================
-function timeAgo(dateString) {
-    if (!dateString) return 'Just now';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = Math.floor((now - date) / 1000);
-    
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
-    if (diff < 2592000) return Math.floor(diff / 604800) + 'w ago';
-    if (diff < 31536000) return Math.floor(diff / 2592000) + 'mo ago';
-    return Math.floor(diff / 31536000) + 'y ago';
-}
-
-function formatNumber(num) {
-    if (!num) return '0';
-    const n = parseInt(num);
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-    return n.toString();
-}
+console.log('🚀 YouTube Clone Starting...');
+console.log('🔗 API URL:', API_BASE_URL);
 
 // ===================== API CALLS =====================
 async function callAPI(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const url = `${API_BASE_URL}${endpoint}?${queryString}`;
     
+    console.log(`📡 Calling: ${url}`);
+    
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-        return await response.json();
+        console.log(`📡 Status: ${response.status}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`📡 Response:`, data);
+        return data;
     } catch (error) {
-        console.error('API call failed:', error);
+        console.error('❌ API Error:', error);
         return { error: error.message };
     }
+}
+
+// ===================== UTILITY FUNCTIONS =====================
+function timeAgo(dateString) {
+    if (!dateString) return 'Just now';
+    
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        
+        if (diff < 60) return 'Just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+        if (diff < 2592000) return Math.floor(diff / 604800) + 'w ago';
+        if (diff < 31536000) return Math.floor(diff / 2592000) + 'mo ago';
+        return Math.floor(diff / 31536000) + 'y ago';
+    } catch {
+        return 'Just now';
+    }
+}
+
+function formatNumber(num) {
+    if (!num) return '0';
+    const n = parseInt(num);
+    if (isNaN(n)) return '0';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
 }
 
 // ===================== LOAD TRENDING VIDEOS =====================
 async function loadTrending() {
     const videoGrid = document.getElementById('videoGrid');
     if (!videoGrid) return;
+    
+    console.log('📺 Loading trending videos...');
     
     videoGrid.innerHTML = `
         <div class="loading-spinner">
@@ -57,29 +75,36 @@ async function loadTrending() {
         </div>
     `;
     
+    // Your API uses /trending with region and max params
     const data = await callAPI('/trending', { region: 'IN', max: 20 });
     
     if (data.error) {
+        console.error('❌ Trending error:', data.error);
         videoGrid.innerHTML = `
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i>
+            <div style="text-align:center;padding:40px;color:#606060;">
+                <i class="fas fa-exclamation-circle" style="font-size:40px;margin-bottom:12px;"></i>
                 <p>Failed to load videos: ${data.error}</p>
+                <p style="font-size:14px;margin-top:8px;">Check API URL in script.js</p>
             </div>
         `;
         return;
     }
     
-    if (!data.videos || data.videos.length === 0) {
+    // Your API returns videos in 'videos' array
+    const videos = data.videos || [];
+    
+    if (videos.length === 0) {
         videoGrid.innerHTML = `
-            <div class="empty-message">
-                <i class="fas fa-video-slash"></i>
+            <div style="text-align:center;padding:40px;color:#606060;">
+                <i class="fas fa-video-slash" style="font-size:40px;margin-bottom:12px;"></i>
                 <p>No videos found</p>
             </div>
         `;
         return;
     }
     
-    renderVideoGrid(data.videos);
+    console.log(`✅ Loaded ${videos.length} videos`);
+    renderVideoGrid(videos);
 }
 
 // ===================== RENDER VIDEO GRID =====================
@@ -87,37 +112,62 @@ function renderVideoGrid(videos) {
     const videoGrid = document.getElementById('videoGrid');
     if (!videoGrid) return;
     
-    videoGrid.innerHTML = videos.map(video => `
-        <div class="video-card" onclick="navigateToWatch('${video.video_id}')">
+    videoGrid.innerHTML = videos.map(video => {
+        // Handle different response structures
+        const videoId = video.video_id || video.id;
+        const title = video.title || 'Untitled';
+        const thumbnail = video.thumbnail || 'https://via.placeholder.com/300x169';
+        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
+        const channelId = video.channel_id || video.channelId || '';
+        const views = video.views || video.viewCount || '0';
+        const publishedAt = video.published_at || video.publishedAt || '';
+        const directStream = video.direct_stream || video.stream;
+        
+        return `
+        <div class="video-card" onclick="navigateToWatch('${videoId}')">
             <div class="video-thumbnail">
-                <img src="${video.thumbnail || 'https://via.placeholder.com/300x169'}" alt="${video.title}" loading="lazy">
+                <img src="${thumbnail}" alt="${title}" loading="lazy">
                 <span class="video-duration">${video.duration || '10:00'}</span>
-                ${video.direct_stream ? '<span class="stream-badge" style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
+                ${directStream ? '<span style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
             </div>
             <div class="video-info">
                 <div class="channel-avatar">
-                    <img src="${video.channel_thumbnail || 'https://via.placeholder.com/40'}" alt="${video.channel_title}">
+                    <img src="${video.channel_thumbnail || 'https://via.placeholder.com/40'}" alt="${channelTitle}">
                 </div>
                 <div class="video-details">
                     <h3 class="video-title">
-                        <a href="watch.html?v=${video.video_id}">${video.title}</a>
+                        <a href="watch.html?v=${videoId}">${title}</a>
                     </h3>
                     <p class="channel-name">
-                        <a href="channel.html?channel_id=${video.channel_id}">${video.channel_title}</a>
+                        <a href="channel.html?channel_id=${channelId}">${channelTitle}</a>
                     </p>
                     <p class="video-meta">
-                        <span>${formatNumber(video.views)} views</span>
+                        <span>${formatNumber(views)} views</span>
                         <span>•</span>
-                        <span>${timeAgo(video.published_at)}</span>
+                        <span>${timeAgo(publishedAt)}</span>
                     </p>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ===================== LOAD VIDEO =====================
 async function loadVideo(videoId) {
+    console.log('🔍 Loading video ID:', videoId);
+    
+    if (!videoId) {
+        console.error('❌ No video ID provided!');
+        document.getElementById('videoPlayer').innerHTML = `
+            <div class="video-placeholder">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>No video ID provided</p>
+            </div>
+        `;
+        return;
+    }
+    
     // Update URL
     if (history.pushState) {
         const newUrl = `${window.location.pathname}?v=${videoId}`;
@@ -135,14 +185,18 @@ async function loadVideo(videoId) {
     document.getElementById('videoTitle').textContent = 'Loading...';
     document.getElementById('pageTitle').textContent = 'YouTube Clone - Loading...';
     
-    // Fetch video data
+    // Fetch video data - Your API uses /video with id param
     const data = await callAPI('/video', { id: videoId, quality: 'highest' });
     
+    console.log('📺 Video Data:', data);
+    
     if (data.error || !data.video_id) {
+        console.error('❌ Video not found:', data.error);
         document.getElementById('videoPlayer').innerHTML = `
             <div class="video-placeholder">
                 <i class="fas fa-exclamation-circle"></i>
                 <p>Video not found</p>
+                <p style="font-size:14px;color:#888;margin-top:8px;">Video ID: ${videoId}</p>
             </div>
         `;
         document.getElementById('videoTitle').textContent = 'Video not found';
@@ -155,10 +209,10 @@ async function loadVideo(videoId) {
     // Render video player
     renderVideoPlayer(data);
     
-    // Load related videos
+    // Load related videos - Your API uses /related
     loadRelatedVideos(videoId);
     
-    // Load comments
+    // Load comments - Your API uses /comments
     loadComments(videoId);
 }
 
@@ -166,10 +220,14 @@ async function loadVideo(videoId) {
 function renderVideoPlayer(video) {
     const playerContainer = document.getElementById('videoPlayer');
     
-    if (video.direct_stream && video.direct_stream.url) {
+    // Check for stream in your API response
+    const stream = video.direct_stream || video.stream;
+    
+    if (stream && stream.url) {
+        console.log('✅ Stream URL found:', stream.url);
         playerContainer.innerHTML = `
             <video class="video-player" controls autoplay>
-                <source src="${video.direct_stream.url}" type="video/mp4">
+                <source src="${stream.url}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
         `;
@@ -177,37 +235,41 @@ function renderVideoPlayer(video) {
         // Show stream info
         const streamInfo = document.getElementById('streamInfo');
         streamInfo.style.display = 'block';
-        document.getElementById('streamQuality').textContent = video.direct_stream.quality || 'Unknown';
-        document.getElementById('streamSource').textContent = video.direct_stream.source || 'Unknown';
-        document.getElementById('streamDownloadLink').href = video.direct_stream.url;
+        document.getElementById('streamQuality').textContent = stream.quality || 'Unknown';
+        document.getElementById('streamSource').textContent = stream.source || 'Unknown';
+        document.getElementById('streamDownloadLink').href = stream.url;
         document.getElementById('downloadBtn').style.display = 'flex';
     } else {
+        console.warn('⚠️ No stream available');
         playerContainer.innerHTML = `
             <div class="video-placeholder">
                 <i class="fas fa-play-circle"></i>
                 <p>Stream not available</p>
-                <p style="font-size:14px;color:#888;margin-top:8px;">Try a different quality or check back later</p>
+                <p style="font-size:14px;color:#888;margin-top:8px;">Try a different quality</p>
             </div>
         `;
         document.getElementById('streamInfo').style.display = 'none';
         document.getElementById('downloadBtn').style.display = 'none';
     }
     
-    // Update video info
-    document.getElementById('videoTitle').textContent = video.title;
+    // Update video info - handle your API response structure
+    document.getElementById('videoTitle').textContent = video.title || 'Untitled';
     document.getElementById('videoDescription').textContent = video.description || 'No description available';
-    document.getElementById('viewCount').textContent = formatNumber(video.statistics?.views) + ' views';
-    document.getElementById('likeCount').textContent = formatNumber(video.statistics?.likes);
-    document.getElementById('dislikeCount').textContent = formatNumber(video.statistics?.dislikes);
-    document.getElementById('publishDate').textContent = timeAgo(video.published_at);
+    
+    // Handle statistics
+    const stats = video.statistics || {};
+    document.getElementById('viewCount').textContent = formatNumber(stats.views || video.views || '0') + ' views';
+    document.getElementById('likeCount').textContent = formatNumber(stats.likes || video.likes || '0');
+    document.getElementById('dislikeCount').textContent = formatNumber(stats.dislikes || video.dislikes || '0');
+    document.getElementById('publishDate').textContent = timeAgo(video.published_at || video.publishedAt);
     
     // Update channel info
-    document.getElementById('channelName').textContent = video.channel_title || 'Unknown Channel';
+    document.getElementById('channelName').textContent = video.channel_title || video.channelTitle || 'Unknown Channel';
     document.getElementById('channelAvatar').src = video.channel_thumbnail || 'https://via.placeholder.com/40';
     document.getElementById('subscriberCount').textContent = '0 subscribers';
     
     // Update comment count
-    document.getElementById('commentCount').textContent = (video.statistics?.comments || '0') + ' Comments';
+    document.getElementById('commentCount').textContent = (stats.comments || video.commentCount || '0') + ' Comments';
 }
 
 // ===================== LOAD RELATED VIDEOS =====================
@@ -220,36 +282,57 @@ async function loadRelatedVideos(videoId) {
         </div>
     `;
     
+    // Your API uses /related with video_id param
     const data = await callAPI('/related', { video_id: videoId, max: 20 });
+    
+    console.log('📺 Related Videos:', data);
     
     if (data.error || !data.related_videos) {
         container.innerHTML = `<p style="color:#606060;">No related videos found</p>`;
         return;
     }
     
-    container.innerHTML = data.related_videos.map(video => `
-        <div class="related-video" onclick="navigateToWatch('${video.video_id}')">
+    const videos = data.related_videos || [];
+    
+    if (videos.length === 0) {
+        container.innerHTML = `<p style="color:#606060;">No related videos found</p>`;
+        return;
+    }
+    
+    container.innerHTML = videos.map(video => {
+        const videoId = video.video_id || video.id;
+        const title = video.title || 'Untitled';
+        const thumbnail = video.thumbnail || 'https://via.placeholder.com/168x94';
+        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
+        const views = video.views || video.viewCount || '0';
+        const publishedAt = video.published_at || video.publishedAt || '';
+        
+        return `
+        <div class="related-video" onclick="navigateToWatch('${videoId}')">
             <div class="related-thumbnail">
-                <img src="${video.thumbnail || 'https://via.placeholder.com/168x94'}" alt="${video.title}" loading="lazy">
+                <img src="${thumbnail}" alt="${title}" loading="lazy">
                 <span class="video-duration">${video.duration || '10:00'}</span>
             </div>
             <div class="related-info">
                 <h4 class="related-title">
-                    <a href="watch.html?v=${video.video_id}">${video.title}</a>
+                    <a href="watch.html?v=${videoId}">${title}</a>
                 </h4>
-                <p class="related-channel">${video.channel_title}</p>
+                <p class="related-channel">${channelTitle}</p>
                 <p class="related-meta">
-                    <span>${formatNumber(video.views)} views</span>
+                    <span>${formatNumber(views)} views</span>
                     <span>•</span>
-                    <span>${timeAgo(video.published_at)}</span>
+                    <span>${timeAgo(publishedAt)}</span>
                 </p>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ===================== LOAD COMMENTS =====================
 async function loadComments(videoId) {
+    console.log('💬 Loading comments for:', videoId);
+    
     const container = document.getElementById('commentsList');
     container.innerHTML = `
         <div class="loading-spinner small">
@@ -258,44 +341,57 @@ async function loadComments(videoId) {
         </div>
     `;
     
+    // Your API uses /comments with video_id param
     const data = await callAPI('/comments', { video_id: videoId, max: 20 });
     
-    if (data.error || !data.comments) {
-        container.innerHTML = `<p style="color:#606060;text-align:center;">No comments available</p>`;
+    console.log('📝 Comments Data:', data);
+    
+    if (data.error) {
+        console.error('❌ Comments error:', data.error);
+        container.innerHTML = `<p style="color:#606060;text-align:center;">Error loading comments: ${data.error}</p>`;
         return;
     }
     
-    if (data.comments.length === 0) {
+    const comments = data.comments || [];
+    
+    if (comments.length === 0) {
         container.innerHTML = `<p style="color:#606060;text-align:center;">No comments yet</p>`;
         return;
     }
     
-    container.innerHTML = data.comments.map(comment => `
+    container.innerHTML = comments.map(comment => {
+        const author = comment.author || 'Unknown User';
+        const text = comment.text || 'No comment text';
+        const likes = comment.likes || '0';
+        const publishedAt = comment.published_at || comment.publishedAt || '';
+        const replies = comment.replies || [];
+        
+        return `
         <div class="comment-item">
             <div class="comment-avatar">
-                <img src="https://via.placeholder.com/40" alt="${comment.author}">
+                <img src="https://via.placeholder.com/40" alt="${author}">
             </div>
             <div class="comment-content">
                 <div class="comment-header">
-                    <span class="comment-author">${comment.author}</span>
-                    <span class="comment-time">${timeAgo(comment.published_at)}</span>
+                    <span class="comment-author">${author}</span>
+                    <span class="comment-time">${timeAgo(publishedAt)}</span>
                 </div>
-                <p class="comment-text">${comment.text}</p>
+                <p class="comment-text">${text}</p>
                 <div class="comment-actions">
                     <button class="comment-like-btn" onclick="likeComment(this)">
                         <i class="fas fa-thumbs-up"></i>
-                        <span>${comment.likes || 0}</span>
+                        <span>${likes}</span>
                     </button>
                     <button class="comment-reply-btn">Reply</button>
                 </div>
-                ${comment.replies && comment.replies.length > 0 ? `
+                ${replies.length > 0 ? `
                 <div class="replies-section">
                     <button class="show-replies-btn" onclick="toggleReplies(this)">
                         <i class="fas fa-caret-down"></i>
-                        Show ${comment.reply_count || comment.replies.length} replies
+                        Show ${replies.length} replies
                     </button>
                     <div class="replies-list" style="display:none;">
-                        ${comment.replies.map(reply => `
+                        ${replies.map(reply => `
                             <div class="reply-item">
                                 <div class="reply-avatar">
                                     <img src="https://via.placeholder.com/30" alt="${reply.author}">
@@ -314,7 +410,8 @@ async function loadComments(videoId) {
                 ` : ''}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ===================== LOAD CHANNEL =====================
@@ -327,7 +424,10 @@ async function loadChannel(channelId) {
         </div>
     `;
     
+    // Your API uses /channel with id param
     const data = await callAPI('/channel', { id: channelId, max: 20 });
+    
+    console.log('📺 Channel Data:', data);
     
     if (data.error || !data.channel_id) {
         container.innerHTML = `
@@ -338,6 +438,8 @@ async function loadChannel(channelId) {
         `;
         return;
     }
+    
+    const videos = data.videos || [];
     
     container.innerHTML = `
         <div class="channel-banner">
@@ -369,7 +471,7 @@ async function loadChannel(channelId) {
         </div>
         
         <div class="video-grid" id="channelVideos">
-            ${data.videos && data.videos.length > 0 ? renderVideoGridHTML(data.videos) : '<p style="color:#606060;text-align:center;padding:40px;">No videos available</p>'}
+            ${videos.length > 0 ? renderVideoGridHTML(videos) : '<p style="color:#606060;text-align:center;padding:40px;">No videos available</p>'}
         </div>
     `;
 }
@@ -384,7 +486,10 @@ async function loadPlaylist(playlistId) {
         </div>
     `;
     
+    // Your API uses /playlist with id param
     const data = await callAPI('/playlist', { id: playlistId, max: 50 });
+    
+    console.log('📋 Playlist Data:', data);
     
     if (data.error || !data.playlist_id) {
         container.innerHTML = `
@@ -395,6 +500,8 @@ async function loadPlaylist(playlistId) {
         `;
         return;
     }
+    
+    const videos = data.videos || [];
     
     container.innerHTML = `
         <div class="playlist-header">
@@ -410,7 +517,7 @@ async function loadPlaylist(playlistId) {
                         <a href="channel.html?channel_id=${data.channel_id}">${data.channel_title}</a>
                     </span>
                     <span>•</span>
-                    <span>${data.videos ? data.videos.length : 0} videos</span>
+                    <span>${videos.length} videos</span>
                 </p>
                 <div class="playlist-actions">
                     <button class="play-btn" onclick="playAllVideos()">▶ Play all</button>
@@ -421,29 +528,38 @@ async function loadPlaylist(playlistId) {
         </div>
         
         <div class="playlist-videos">
-            ${data.videos && data.videos.length > 0 ? data.videos.map((video, index) => `
-                <div class="playlist-item" onclick="navigateToWatch('${video.video_id}')">
+            ${videos.length > 0 ? videos.map((video, index) => {
+                const videoId = video.video_id || video.id;
+                const title = video.title || 'Untitled';
+                const thumbnail = video.thumbnail || 'https://via.placeholder.com/160x90';
+                const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
+                const channelId = video.channel_id || video.channelId || '';
+                const views = video.views || video.viewCount || '0';
+                
+                return `
+                <div class="playlist-item" onclick="navigateToWatch('${videoId}')">
                     <div class="playlist-item-number">${index + 1}</div>
                     <div class="playlist-item-thumbnail">
-                        <img src="${video.thumbnail || 'https://via.placeholder.com/160x90'}" alt="${video.title}" loading="lazy">
+                        <img src="${thumbnail}" alt="${title}" loading="lazy">
                         <span class="video-duration">${video.duration || '10:00'}</span>
                     </div>
                     <div class="playlist-item-info">
                         <h4 class="playlist-item-title">
-                            <a href="watch.html?v=${video.video_id}">${video.title}</a>
+                            <a href="watch.html?v=${videoId}">${title}</a>
                         </h4>
                         <p class="playlist-item-channel">
-                            <a href="channel.html?channel_id=${video.channel_id}">${video.channel_title}</a>
+                            <a href="channel.html?channel_id=${channelId}">${channelTitle}</a>
                         </p>
                         <p class="playlist-item-meta">
-                            <span>${formatNumber(video.views)} views</span>
+                            <span>${formatNumber(views)} views</span>
                         </p>
                     </div>
                     <div class="playlist-item-actions">
                         <i class="fas fa-ellipsis-v"></i>
                     </div>
                 </div>
-            `).join('') : '<p style="color:#606060;text-align:center;padding:40px;">No videos in this playlist</p>'}
+                `;
+            }).join('') : '<p style="color:#606060;text-align:center;padding:40px;">No videos in this playlist</p>'}
         </div>
     `;
 }
@@ -455,7 +571,6 @@ async function searchVideos(event) {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
     
-    // Redirect to search page
     window.location.href = `search.html?search_query=${encodeURIComponent(query)}`;
 }
 
@@ -470,9 +585,10 @@ async function performSearch(query) {
         </div>
     `;
     
-    const order = document.getElementById('orderFilter').value;
-    const duration = document.getElementById('durationFilter').value;
+    const order = document.getElementById('orderFilter')?.value || 'relevance';
+    const duration = document.getElementById('durationFilter')?.value || 'any';
     
+    // Your API uses /search with q param
     const data = await callAPI('/search', { 
         q: query, 
         max: 20, 
@@ -480,6 +596,8 @@ async function performSearch(query) {
         duration: duration,
         quality: 'highest'
     });
+    
+    console.log('🔍 Search Results:', data);
     
     if (data.error || !data.videos) {
         resultsContainer.innerHTML = `
@@ -491,7 +609,9 @@ async function performSearch(query) {
         return;
     }
     
-    if (data.videos.length === 0) {
+    const videos = data.videos || [];
+    
+    if (videos.length === 0) {
         resultsContainer.innerHTML = `
             <div class="empty-message">
                 <i class="fas fa-search"></i>
@@ -501,36 +621,83 @@ async function performSearch(query) {
         return;
     }
     
-    resultsContainer.innerHTML = data.videos.map(video => `
-        <div class="search-item" onclick="navigateToWatch('${video.video_id}')">
+    resultsContainer.innerHTML = videos.map(video => {
+        const videoId = video.video_id || video.id;
+        const title = video.title || 'Untitled';
+        const thumbnail = video.thumbnail || 'https://via.placeholder.com/360x202';
+        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
+        const channelId = video.channel_id || video.channelId || '';
+        const views = video.views || video.viewCount || '0';
+        const publishedAt = video.published_at || video.publishedAt || '';
+        const description = video.description || '';
+        const directStream = video.direct_stream || video.stream;
+        
+        return `
+        <div class="search-item" onclick="navigateToWatch('${videoId}')">
             <div class="search-thumbnail">
-                <img src="${video.thumbnail || 'https://via.placeholder.com/360x202'}" alt="${video.title}" loading="lazy">
+                <img src="${thumbnail}" alt="${title}" loading="lazy">
                 <span class="video-duration">${video.duration || '10:00'}</span>
             </div>
             <div class="search-info">
                 <h3 class="search-title">
-                    <a href="watch.html?v=${video.video_id}">${video.title}</a>
+                    <a href="watch.html?v=${videoId}">${title}</a>
                 </h3>
                 <p class="search-channel">
-                    <a href="channel.html?channel_id=${video.channel_id}">${video.channel_title}</a>
+                    <a href="channel.html?channel_id=${channelId}">${channelTitle}</a>
                 </p>
                 <p class="search-meta">
-                    <span>${formatNumber(video.views)} views</span>
+                    <span>${formatNumber(views)} views</span>
                     <span>•</span>
-                    <span>${timeAgo(video.published_at)}</span>
+                    <span>${timeAgo(publishedAt)}</span>
                 </p>
-                <p class="search-description">${video.description ? video.description.substring(0, 150) + '...' : ''}</p>
-                ${video.direct_stream ? '<span class="stream-badge"><i class="fas fa-play"></i> Direct Stream</span>' : ''}
+                <p class="search-description">${description ? description.substring(0, 150) + '...' : ''}</p>
+                ${directStream ? '<span class="stream-badge"><i class="fas fa-play"></i> Direct Stream</span>' : ''}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
-async function applyFilters() {
-    const query = document.getElementById('searchInput').value.trim();
-    if (query) {
-        await performSearch(query);
-    }
+// ===================== HELPER FUNCTIONS =====================
+function renderVideoGridHTML(videos) {
+    return videos.map(video => {
+        const videoId = video.video_id || video.id;
+        const title = video.title || 'Untitled';
+        const thumbnail = video.thumbnail || 'https://via.placeholder.com/300x169';
+        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
+        const channelId = video.channel_id || video.channelId || '';
+        const views = video.views || video.viewCount || '0';
+        const publishedAt = video.published_at || video.publishedAt || '';
+        const directStream = video.direct_stream || video.stream;
+        
+        return `
+        <div class="video-card" onclick="navigateToWatch('${videoId}')">
+            <div class="video-thumbnail">
+                <img src="${thumbnail}" alt="${title}" loading="lazy">
+                <span class="video-duration">${video.duration || '10:00'}</span>
+                ${directStream ? '<span style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
+            </div>
+            <div class="video-info">
+                <div class="channel-avatar">
+                    <img src="${video.channel_thumbnail || 'https://via.placeholder.com/40'}" alt="${channelTitle}">
+                </div>
+                <div class="video-details">
+                    <h3 class="video-title">
+                        <a href="watch.html?v=${videoId}">${title}</a>
+                    </h3>
+                    <p class="channel-name">
+                        <a href="channel.html?channel_id=${channelId}">${channelTitle}</a>
+                    </p>
+                    <p class="video-meta">
+                        <span>${formatNumber(views)} views</span>
+                        <span>•</span>
+                        <span>${timeAgo(publishedAt)}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
 }
 
 // ===================== NAVIGATION =====================
@@ -545,19 +712,17 @@ function navigateToChannel(channelId) {
 // ===================== SIDEBAR =====================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    
     if (window.innerWidth <= 768) {
         sidebar.classList.toggle('visible');
     } else {
         sidebar.classList.toggle('hidden');
-        mainContent.classList.toggle('expanded');
+        document.getElementById('mainContent').classList.toggle('expanded');
     }
 }
 
 // ===================== INTERACTIONS =====================
 function toggleSubscribe(button) {
-    if (button.textContent === 'Subscribe' || button.textContent === 'Subscribe') {
+    if (button.textContent.trim() === 'Subscribe') {
         button.textContent = 'Subscribed';
         button.style.background = '#606060';
     } else {
@@ -576,7 +741,6 @@ function likeVideo(button) {
     } else {
         count++;
         button.classList.add('liked');
-        // Remove dislike if active
         const dislikeBtn = button.parentElement.querySelector('.action-btn.disliked');
         if (dislikeBtn) {
             const dislikeCount = dislikeBtn.querySelector('span');
@@ -597,7 +761,6 @@ function dislikeVideo(button) {
     } else {
         count++;
         button.classList.add('disliked');
-        // Remove like if active
         const likeBtn = button.parentElement.querySelector('.action-btn.liked');
         if (likeBtn) {
             const likeCount = likeBtn.querySelector('span');
@@ -615,11 +778,9 @@ function shareVideo() {
             url: window.location.href
         }).catch(() => {});
     } else {
-        // Fallback: Copy to clipboard
         navigator.clipboard.writeText(window.location.href).then(() => {
             alert('Link copied to clipboard!');
         }).catch(() => {
-            // Manual copy
             const input = document.createElement('input');
             input.value = window.location.href;
             document.body.appendChild(input);
@@ -668,7 +829,6 @@ function addComment() {
     commentsList.prepend(newComment);
     field.value = '';
     
-    // Update comment count
     const countSpan = document.getElementById('commentCount');
     const currentCount = parseInt(countSpan.textContent) || 0;
     countSpan.textContent = (currentCount + 1) + ' Comments';
@@ -694,11 +854,8 @@ function toggleReplies(button) {
 }
 
 function filterVideos(category) {
-    // Update active tab
     document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
     event.target.classList.add('active');
-    
-    // Reload with category filter (you can implement category filtering)
     loadTrending();
 }
 
@@ -711,40 +868,51 @@ function playAllVideos() {
     }
 }
 
-// Helper function for rendering video grid HTML
-function renderVideoGridHTML(videos) {
-    return videos.map(video => `
-        <div class="video-card" onclick="navigateToWatch('${video.video_id}')">
-            <div class="video-thumbnail">
-                <img src="${video.thumbnail || 'https://via.placeholder.com/300x169'}" alt="${video.title}" loading="lazy">
-                <span class="video-duration">${video.duration || '10:00'}</span>
-                ${video.direct_stream ? '<span class="stream-badge" style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
-            </div>
-            <div class="video-info">
-                <div class="channel-avatar">
-                    <img src="${video.channel_thumbnail || 'https://via.placeholder.com/40'}" alt="${video.channel_title}">
-                </div>
-                <div class="video-details">
-                    <h3 class="video-title">
-                        <a href="watch.html?v=${video.video_id}">${video.title}</a>
-                    </h3>
-                    <p class="channel-name">
-                        <a href="channel.html?channel_id=${video.channel_id}">${video.channel_title}</a>
-                    </p>
-                    <p class="video-meta">
-                        <span>${formatNumber(video.views)} views</span>
-                        <span>•</span>
-                        <span>${timeAgo(video.published_at)}</span>
-                    </p>
-                </div>
-            </div>
-        </div>
-    `).join('');
+// ===================== APPLY FILTERS =====================
+async function applyFilters() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (query) {
+        await performSearch(query);
+    }
 }
+
+// ===================== INITIALIZATION =====================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 Page loaded:', window.location.pathname);
+    
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    
+    if (path === '/' || path === '/index.html') {
+        loadTrending();
+    } else if (path === '/watch' || path === '/watch.html') {
+        const videoId = params.get('v');
+        if (videoId) {
+            loadVideo(videoId);
+        } else {
+            console.warn('⚠️ No video ID in URL');
+        }
+    } else if (path === '/search' || path === '/search.html') {
+        const query = params.get('search_query');
+        if (query) {
+            document.getElementById('searchInput').value = query;
+            performSearch(query);
+        }
+    } else if (path === '/channel' || path === '/channel.html') {
+        const channelId = params.get('channel_id');
+        if (channelId) {
+            loadChannel(channelId);
+        }
+    } else if (path === '/playlist' || path === '/playlist.html') {
+        const playlistId = params.get('list');
+        if (playlistId) {
+            loadPlaylist(playlistId);
+        }
+    }
+});
 
 // ===================== KEYBOARD SHORTCUTS =====================
 document.addEventListener('keydown', function(e) {
-    // Escape key - close sidebar
     if (e.key === 'Escape') {
         const sidebar = document.getElementById('sidebar');
         if (sidebar && sidebar.classList.contains('visible')) {
@@ -752,7 +920,6 @@ document.addEventListener('keydown', function(e) {
         }
     }
     
-    // Space bar - toggle video play/pause
     if (e.key === ' ' && document.activeElement.tagName !== 'INPUT') {
         const video = document.querySelector('.video-player');
         if (video) {
@@ -766,5 +933,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-console.log('🎬 YouTube Clone loaded successfully!');
+console.log('✅ YouTube Clone loaded successfully!');
 console.log('🔗 API URL:', API_BASE_URL);
+console.log('💡 If videos don\'t load, check API_URL in script.js');
