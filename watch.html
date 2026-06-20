@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">YouTube Clone - Watch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <i class="fas fa-bars menu-icon" onclick="toggleSidebar()"></i>
+            <a href="index.html" class="logo">
+                <i class="fab fa-youtube" style="color: #ff0000;"></i>
+                <span>YouTube</span>
+            </a>
+        </div>
+        
+        <div class="header-center">
+            <form class="search-form" onsubmit="searchVideos(event)">
+                <input type="text" id="searchInput" placeholder="Search" required>
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+        
+        <div class="header-right">
+            <i class="fas fa-video"></i>
+            <i class="fas fa-th"></i>
+            <i class="fas fa-bell"></i>
+            <div class="avatar">U</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="watch-container">
+            <div class="watch-main">
+                <!-- Video Player -->
+                <div class="video-player-container">
+                    <div id="videoPlayer">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading video...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Video Info -->
+                <div class="video-info-section" id="videoInfo">
+                    <h1 class="video-title" id="videoTitle">Loading video...</h1>
+                    
+                    <div class="video-actions">
+                        <div class="channel-info" id="channelInfo">
+                            <div class="channel-avatar">
+                                <img id="channelAvatar" src="https://via.placeholder.com/40" alt="Channel">
+                            </div>
+                            <div class="channel-details">
+                                <h3 id="channelName">Channel Name</h3>
+                                <p id="subscriberCount">0 subscribers</p>
+                            </div>
+                            <button class="subscribe-btn" onclick="toggleSubscribe(this)">Subscribe</button>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="likeVideo(this)">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span id="likeCount">0</span>
+                            </button>
+                            <button class="action-btn" onclick="dislikeVideo(this)">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span id="dislikeCount">0</span>
+                            </button>
+                            <button class="action-btn" onclick="shareVideo()">
+                                <i class="fas fa-share"></i>
+                                <span>Share</span>
+                            </button>
+                            <button class="action-btn" id="downloadBtn" onclick="downloadVideo()" style="display:none;">
+                                <i class="fas fa-download"></i>
+                                <span>Download</span>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Description -->
+                    <div class="video-description">
+                        <p class="views-info">
+                            <span id="viewCount">0 views</span>
+                            <span>•</span>
+                            <span id="publishDate">Just now</span>
+                        </p>
+                        <p class="description-text" id="videoDescription">Loading description...</p>
+                        
+                        <div class="stream-info" id="streamInfo" style="display: none;">
+                            <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+                            <span>Direct stream available:</span>
+                            <span class="stream-quality" id="streamQuality">1080p</span>
+                            <span class="stream-source" id="streamSource">clipto</span>
+                            <a href="#" class="download-link" id="streamDownloadLink" download>
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comments Section -->
+                <div class="comments-section" id="commentsSection">
+                    <h3 class="comments-title">
+                        <span id="commentCount">0 Comments</span>
+                        <i class="fas fa-sort-down"></i>
+                    </h3>
+                    
+                    <div class="comment-input">
+                        <div class="comment-avatar">
+                            <img src="https://via.placeholder.com/40" alt="User">
+                        </div>
+                        <input type="text" placeholder="Add a comment..." class="comment-field" id="commentField">
+                        <button class="comment-btn" onclick="addComment()">Comment</button>
+                    </div>
+                    
+                    <div class="comments-list" id="commentsList">
+                        <!-- Comments loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Videos Sidebar -->
+            <div class="watch-sidebar">
+                <h3 class="sidebar-title">Up Next</h3>
+                <div id="relatedVideos">
+                    <div class="loading-spinner small">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading related videos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // Load video from URL parameter
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('v');
+            if (videoId) {
+                loadVideo(videoId);
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
