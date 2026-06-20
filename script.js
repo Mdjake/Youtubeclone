@@ -1,4 +1,5 @@
-// script.js - COMPLETE FIXED VERSION MATCHING YOUR API
+// script.js - COMPLETE FIXED VERSION
+// Matches your YouTube Ultimate API v5.0 exactly
 
 // ===================== CONFIGURATION =====================
 // ⚠️ CHANGE THIS TO YOUR API URL!
@@ -75,7 +76,7 @@ async function loadTrending() {
         </div>
     `;
     
-    // Your API uses /trending with region and max params
+    // Your API: /trending?region=IN&max=20
     const data = await callAPI('/trending', { region: 'IN', max: 20 });
     
     if (data.error) {
@@ -113,21 +114,22 @@ function renderVideoGrid(videos) {
     if (!videoGrid) return;
     
     videoGrid.innerHTML = videos.map(video => {
-        // Handle different response structures
-        const videoId = video.video_id || video.id;
+        // Your API uses these field names
+        const videoId = video.video_id;
         const title = video.title || 'Untitled';
         const thumbnail = video.thumbnail || 'https://via.placeholder.com/300x169';
-        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
-        const channelId = video.channel_id || video.channelId || '';
-        const views = video.views || video.viewCount || '0';
-        const publishedAt = video.published_at || video.publishedAt || '';
-        const directStream = video.direct_stream || video.stream;
+        const channelTitle = video.channel_title || 'Unknown Channel';
+        const channelId = video.channel_id || '';
+        const views = video.views || '0';
+        const publishedAt = video.published_at || '';
+        const directStream = video.direct_stream;
+        const duration = video.duration || '10:00';
         
         return `
         <div class="video-card" onclick="navigateToWatch('${videoId}')">
             <div class="video-thumbnail">
                 <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <span class="video-duration">${video.duration || '10:00'}</span>
+                <span class="video-duration">${duration}</span>
                 ${directStream ? '<span style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
             </div>
             <div class="video-info">
@@ -185,7 +187,7 @@ async function loadVideo(videoId) {
     document.getElementById('videoTitle').textContent = 'Loading...';
     document.getElementById('pageTitle').textContent = 'YouTube Clone - Loading...';
     
-    // Fetch video data - Your API uses /video with id param
+    // Your API: /video?id=VIDEO_ID&quality=highest
     const data = await callAPI('/video', { id: videoId, quality: 'highest' });
     
     console.log('📺 Video Data:', data);
@@ -197,6 +199,7 @@ async function loadVideo(videoId) {
                 <i class="fas fa-exclamation-circle"></i>
                 <p>Video not found</p>
                 <p style="font-size:14px;color:#888;margin-top:8px;">Video ID: ${videoId}</p>
+                <p style="font-size:14px;color:#888;">Error: ${data.error || 'Unknown error'}</p>
             </div>
         `;
         document.getElementById('videoTitle').textContent = 'Video not found';
@@ -209,10 +212,10 @@ async function loadVideo(videoId) {
     // Render video player
     renderVideoPlayer(data);
     
-    // Load related videos - Your API uses /related
+    // Load related videos - Your API: /related?video_id=VIDEO_ID
     loadRelatedVideos(videoId);
     
-    // Load comments - Your API uses /comments
+    // Load comments - Your API: /comments?video_id=VIDEO_ID
     loadComments(videoId);
 }
 
@@ -220,8 +223,8 @@ async function loadVideo(videoId) {
 function renderVideoPlayer(video) {
     const playerContainer = document.getElementById('videoPlayer');
     
-    // Check for stream in your API response
-    const stream = video.direct_stream || video.stream;
+    // Your API returns direct_stream object
+    const stream = video.direct_stream;
     
     if (stream && stream.url) {
         console.log('✅ Stream URL found:', stream.url);
@@ -252,24 +255,24 @@ function renderVideoPlayer(video) {
         document.getElementById('downloadBtn').style.display = 'none';
     }
     
-    // Update video info - handle your API response structure
+    // Update video info - Your API structure
     document.getElementById('videoTitle').textContent = video.title || 'Untitled';
     document.getElementById('videoDescription').textContent = video.description || 'No description available';
     
-    // Handle statistics
+    // Your API has statistics as an object
     const stats = video.statistics || {};
-    document.getElementById('viewCount').textContent = formatNumber(stats.views || video.views || '0') + ' views';
-    document.getElementById('likeCount').textContent = formatNumber(stats.likes || video.likes || '0');
-    document.getElementById('dislikeCount').textContent = formatNumber(stats.dislikes || video.dislikes || '0');
-    document.getElementById('publishDate').textContent = timeAgo(video.published_at || video.publishedAt);
+    document.getElementById('viewCount').textContent = formatNumber(stats.views || '0') + ' views';
+    document.getElementById('likeCount').textContent = formatNumber(stats.likes || '0');
+    document.getElementById('dislikeCount').textContent = formatNumber(stats.dislikes || '0');
+    document.getElementById('publishDate').textContent = timeAgo(video.published_at);
     
     // Update channel info
-    document.getElementById('channelName').textContent = video.channel_title || video.channelTitle || 'Unknown Channel';
-    document.getElementById('channelAvatar').src = video.channel_thumbnail || 'https://via.placeholder.com/40';
+    document.getElementById('channelName').textContent = video.channel_title || 'Unknown Channel';
+    document.getElementById('channelAvatar').src = video.thumbnail || 'https://via.placeholder.com/40';
     document.getElementById('subscriberCount').textContent = '0 subscribers';
     
-    // Update comment count
-    document.getElementById('commentCount').textContent = (stats.comments || video.commentCount || '0') + ' Comments';
+    // Update comment count from statistics
+    document.getElementById('commentCount').textContent = formatNumber(stats.comments || '0') + ' Comments';
 }
 
 // ===================== LOAD RELATED VIDEOS =====================
@@ -282,7 +285,7 @@ async function loadRelatedVideos(videoId) {
         </div>
     `;
     
-    // Your API uses /related with video_id param
+    // Your API: /related?video_id=VIDEO_ID&max=20
     const data = await callAPI('/related', { video_id: videoId, max: 20 });
     
     console.log('📺 Related Videos:', data);
@@ -300,18 +303,19 @@ async function loadRelatedVideos(videoId) {
     }
     
     container.innerHTML = videos.map(video => {
-        const videoId = video.video_id || video.id;
+        const videoId = video.video_id;
         const title = video.title || 'Untitled';
         const thumbnail = video.thumbnail || 'https://via.placeholder.com/168x94';
-        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
-        const views = video.views || video.viewCount || '0';
-        const publishedAt = video.published_at || video.publishedAt || '';
+        const channelTitle = video.channel_title || 'Unknown Channel';
+        const views = video.views || '0';
+        const publishedAt = video.published_at || '';
+        const duration = video.duration || '10:00';
         
         return `
         <div class="related-video" onclick="navigateToWatch('${videoId}')">
             <div class="related-thumbnail">
                 <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <span class="video-duration">${video.duration || '10:00'}</span>
+                <span class="video-duration">${duration}</span>
             </div>
             <div class="related-info">
                 <h4 class="related-title">
@@ -341,7 +345,7 @@ async function loadComments(videoId) {
         </div>
     `;
     
-    // Your API uses /comments with video_id param
+    // Your API: /comments?video_id=VIDEO_ID&max=20
     const data = await callAPI('/comments', { video_id: videoId, max: 20 });
     
     console.log('📝 Comments Data:', data);
@@ -363,8 +367,9 @@ async function loadComments(videoId) {
         const author = comment.author || 'Unknown User';
         const text = comment.text || 'No comment text';
         const likes = comment.likes || '0';
-        const publishedAt = comment.published_at || comment.publishedAt || '';
+        const publishedAt = comment.published_at || '';
         const replies = comment.replies || [];
+        const replyCount = comment.reply_count || 0;
         
         return `
         <div class="comment-item">
@@ -388,7 +393,7 @@ async function loadComments(videoId) {
                 <div class="replies-section">
                     <button class="show-replies-btn" onclick="toggleReplies(this)">
                         <i class="fas fa-caret-down"></i>
-                        Show ${replies.length} replies
+                        Show ${replyCount || replies.length} replies
                     </button>
                     <div class="replies-list" style="display:none;">
                         ${replies.map(reply => `
@@ -424,7 +429,7 @@ async function loadChannel(channelId) {
         </div>
     `;
     
-    // Your API uses /channel with id param
+    // Your API: /channel?id=CHANNEL_ID&max=20
     const data = await callAPI('/channel', { id: channelId, max: 20 });
     
     console.log('📺 Channel Data:', data);
@@ -440,6 +445,7 @@ async function loadChannel(channelId) {
     }
     
     const videos = data.videos || [];
+    const stats = data.statistics || {};
     
     container.innerHTML = `
         <div class="channel-banner">
@@ -454,9 +460,9 @@ async function loadChannel(channelId) {
                 <h1 class="channel-name">${data.name}</h1>
                 <p class="channel-handle">@${data.custom_url || data.channel_id}</p>
                 <p class="channel-stats">
-                    <span>${formatNumber(data.statistics?.subscribers)} subscribers</span>
+                    <span>${formatNumber(stats.subscribers)} subscribers</span>
                     <span>•</span>
-                    <span>${formatNumber(data.statistics?.videos)} videos</span>
+                    <span>${formatNumber(stats.videos)} videos</span>
                 </p>
                 <p class="channel-description">${data.description || 'No description available'}</p>
                 <button class="subscribe-btn large" onclick="toggleSubscribe(this)">Subscribe</button>
@@ -486,7 +492,7 @@ async function loadPlaylist(playlistId) {
         </div>
     `;
     
-    // Your API uses /playlist with id param
+    // Your API: /playlist?id=PLAYLIST_ID&max=50
     const data = await callAPI('/playlist', { id: playlistId, max: 50 });
     
     console.log('📋 Playlist Data:', data);
@@ -529,19 +535,20 @@ async function loadPlaylist(playlistId) {
         
         <div class="playlist-videos">
             ${videos.length > 0 ? videos.map((video, index) => {
-                const videoId = video.video_id || video.id;
+                const videoId = video.video_id;
                 const title = video.title || 'Untitled';
                 const thumbnail = video.thumbnail || 'https://via.placeholder.com/160x90';
-                const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
-                const channelId = video.channel_id || video.channelId || '';
-                const views = video.views || video.viewCount || '0';
+                const channelTitle = video.channel_title || 'Unknown Channel';
+                const channelId = video.channel_id || '';
+                const views = video.views || '0';
+                const duration = video.duration || '10:00';
                 
                 return `
                 <div class="playlist-item" onclick="navigateToWatch('${videoId}')">
                     <div class="playlist-item-number">${index + 1}</div>
                     <div class="playlist-item-thumbnail">
                         <img src="${thumbnail}" alt="${title}" loading="lazy">
-                        <span class="video-duration">${video.duration || '10:00'}</span>
+                        <span class="video-duration">${duration}</span>
                     </div>
                     <div class="playlist-item-info">
                         <h4 class="playlist-item-title">
@@ -588,7 +595,7 @@ async function performSearch(query) {
     const order = document.getElementById('orderFilter')?.value || 'relevance';
     const duration = document.getElementById('durationFilter')?.value || 'any';
     
-    // Your API uses /search with q param
+    // Your API: /search?q=QUERY&max=20&order=relevance&duration=any&quality=highest
     const data = await callAPI('/search', { 
         q: query, 
         max: 20, 
@@ -622,21 +629,22 @@ async function performSearch(query) {
     }
     
     resultsContainer.innerHTML = videos.map(video => {
-        const videoId = video.video_id || video.id;
+        const videoId = video.video_id;
         const title = video.title || 'Untitled';
         const thumbnail = video.thumbnail || 'https://via.placeholder.com/360x202';
-        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
-        const channelId = video.channel_id || video.channelId || '';
-        const views = video.views || video.viewCount || '0';
-        const publishedAt = video.published_at || video.publishedAt || '';
+        const channelTitle = video.channel_title || 'Unknown Channel';
+        const channelId = video.channel_id || '';
+        const views = video.views || '0';
+        const publishedAt = video.published_at || '';
         const description = video.description || '';
-        const directStream = video.direct_stream || video.stream;
+        const directStream = video.direct_stream;
+        const duration = video.duration || '10:00';
         
         return `
         <div class="search-item" onclick="navigateToWatch('${videoId}')">
             <div class="search-thumbnail">
                 <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <span class="video-duration">${video.duration || '10:00'}</span>
+                <span class="video-duration">${duration}</span>
             </div>
             <div class="search-info">
                 <h3 class="search-title">
@@ -658,46 +666,11 @@ async function performSearch(query) {
     }).join('');
 }
 
-// ===================== HELPER FUNCTIONS =====================
-function renderVideoGridHTML(videos) {
-    return videos.map(video => {
-        const videoId = video.video_id || video.id;
-        const title = video.title || 'Untitled';
-        const thumbnail = video.thumbnail || 'https://via.placeholder.com/300x169';
-        const channelTitle = video.channel_title || video.channelTitle || 'Unknown Channel';
-        const channelId = video.channel_id || video.channelId || '';
-        const views = video.views || video.viewCount || '0';
-        const publishedAt = video.published_at || video.publishedAt || '';
-        const directStream = video.direct_stream || video.stream;
-        
-        return `
-        <div class="video-card" onclick="navigateToWatch('${videoId}')">
-            <div class="video-thumbnail">
-                <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <span class="video-duration">${video.duration || '10:00'}</span>
-                ${directStream ? '<span style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
-            </div>
-            <div class="video-info">
-                <div class="channel-avatar">
-                    <img src="${video.channel_thumbnail || 'https://via.placeholder.com/40'}" alt="${channelTitle}">
-                </div>
-                <div class="video-details">
-                    <h3 class="video-title">
-                        <a href="watch.html?v=${videoId}">${title}</a>
-                    </h3>
-                    <p class="channel-name">
-                        <a href="channel.html?channel_id=${channelId}">${channelTitle}</a>
-                    </p>
-                    <p class="video-meta">
-                        <span>${formatNumber(views)} views</span>
-                        <span>•</span>
-                        <span>${timeAgo(publishedAt)}</span>
-                    </p>
-                </div>
-            </div>
-        </div>
-        `;
-    }).join('');
+async function applyFilters() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (query) {
+        await performSearch(query);
+    }
 }
 
 // ===================== NAVIGATION =====================
@@ -868,12 +841,47 @@ function playAllVideos() {
     }
 }
 
-// ===================== APPLY FILTERS =====================
-async function applyFilters() {
-    const query = document.getElementById('searchInput').value.trim();
-    if (query) {
-        await performSearch(query);
-    }
+// ===================== HELPER FUNCTIONS =====================
+function renderVideoGridHTML(videos) {
+    return videos.map(video => {
+        const videoId = video.video_id;
+        const title = video.title || 'Untitled';
+        const thumbnail = video.thumbnail || 'https://via.placeholder.com/300x169';
+        const channelTitle = video.channel_title || 'Unknown Channel';
+        const channelId = video.channel_id || '';
+        const views = video.views || '0';
+        const publishedAt = video.published_at || '';
+        const directStream = video.direct_stream;
+        const duration = video.duration || '10:00';
+        
+        return `
+        <div class="video-card" onclick="navigateToWatch('${videoId}')">
+            <div class="video-thumbnail">
+                <img src="${thumbnail}" alt="${title}" loading="lazy">
+                <span class="video-duration">${duration}</span>
+                ${directStream ? '<span style="position:absolute;top:8px;left:8px;background:#4CAF50;color:white;padding:2px 8px;border-radius:12px;font-size:11px;"><i class="fas fa-play"></i> Direct</span>' : ''}
+            </div>
+            <div class="video-info">
+                <div class="channel-avatar">
+                    <img src="${video.channel_thumbnail || 'https://via.placeholder.com/40'}" alt="${channelTitle}">
+                </div>
+                <div class="video-details">
+                    <h3 class="video-title">
+                        <a href="watch.html?v=${videoId}">${title}</a>
+                    </h3>
+                    <p class="channel-name">
+                        <a href="channel.html?channel_id=${channelId}">${channelTitle}</a>
+                    </p>
+                    <p class="video-meta">
+                        <span>${formatNumber(views)} views</span>
+                        <span>•</span>
+                        <span>${timeAgo(publishedAt)}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
 }
 
 // ===================== INITIALIZATION =====================
@@ -891,6 +899,13 @@ document.addEventListener('DOMContentLoaded', function() {
             loadVideo(videoId);
         } else {
             console.warn('⚠️ No video ID in URL');
+            document.getElementById('videoPlayer').innerHTML = `
+                <div class="video-placeholder">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>No video ID provided</p>
+                    <p style="font-size:14px;color:#888;margin-top:8px;">URL should be: watch.html?v=VIDEO_ID</p>
+                </div>
+            `;
         }
     } else if (path === '/search' || path === '/search.html') {
         const query = params.get('search_query');
@@ -936,3 +951,11 @@ document.addEventListener('keydown', function(e) {
 console.log('✅ YouTube Clone loaded successfully!');
 console.log('🔗 API URL:', API_BASE_URL);
 console.log('💡 If videos don\'t load, check API_URL in script.js');
+console.log('📋 Your API endpoints:');
+console.log('   /trending?region=IN&max=20');
+console.log('   /video?id=VIDEO_ID&quality=highest');
+console.log('   /comments?video_id=VIDEO_ID&max=20');
+console.log('   /related?video_id=VIDEO_ID&max=20');
+console.log('   /search?q=QUERY&max=20&order=relevance');
+console.log('   /channel?id=CHANNEL_ID&max=20');
+console.log('   /playlist?id=PLAYLIST_ID&max=50');
